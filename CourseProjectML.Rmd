@@ -1,0 +1,114 @@
+---
+title: "PracticalMachineLearning"
+author: "Songju Kim"
+date: '2020 7 6 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading files
+
+
+```{r echo=TRUE}
+
+train_url <-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+raw_train_set<-read.csv(train_url)
+raw_test_set <-read.csv(test_url)
+
+dim(raw_train_set)
+
+
+```
+160 variables!! Too many.
+
+We check data structures with str and summary R function,
+Then We notice there are so many variables which are NA or None values.
+
+## Preprocessing 
+
+Before slicing, we preprocess raw data set into tidy set
+
+With nearZeroVar function, we throw away predictors which are not qualified.
+Additionally, We reduce predictors which is almost composed of NAs
+
+
+```{r pressure, echo=TRUE}
+library(caret)
+
+NZV<-nearZeroVar(raw_train_set)
+
+train_set<-raw_train_set[,-NZV]
+test_set <-raw_test_set[,-NZV]
+
+Na90<-sapply(train_set,function(x) mean(is.na(x))) >0.9 
+train_set<-train_set[,Na90==FALSE]
+ 
+
+```
+First 5 column variables are not meaningful for model
+So, throw away~~!
+
+```{r echo=TRUE}
+
+train_set<-train_set[,-(1:5)]
+
+test_set<-test_set[,Na90==FALSE]
+
+test_set<-test_set[,-(1:5)]
+
+train_set$classe<-as.factor(train_set$classe)
+
+
+```
+
+## Split train data for cross validation
+
+We split train data set into 2 sets for cross validation
+
+```{r echo=TRUE}
+library(caret)
+
+inTrain <-createDataPartition(train_set$classe,p=0.75,list=FALSE) 
+strain_set<-train_set[inTrain,]
+stest_set<-train_set[-inTrain,]
+```
+
+## Model selection and Train 
+
+I selected rpart regression tree model for this problem.
+We need to classify categorical outcome based on numeric predictors.
+
+```{r echo=TRUE}
+library(rattle)
+
+mod_rpart <- train(classe ~ .,  method = "rpart",  data = train_set,   tuneLength = 10,   metric = "Accuracy" )
+
+fancyRpartPlot(mod_rpart$finalModel)
+
+```
+
+
+## Test and cross validation
+```{r echo=TRUE}
+
+predMod<-predict(mod_rpart,stest_set)
+
+
+confusionMatrix(predMod,stest_set$classe)
+```
+
+
+## Results of Actual test
+
+```{r echo=TRUE}
+testMod<-predict(mod_rpart,test_set)
+
+
+ggplot(data.frame(problem_id=test_set$problem_id,classe=testMod),aes(x=problem_id,y=classe,col=classe))+geom_point()
+```
+
