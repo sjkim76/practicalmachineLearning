@@ -85,7 +85,7 @@ We need to classify categorical outcome based on numeric predictors.
 ```{r echo=TRUE}
 library(rattle)
 
-mod_rpart <- train(classe ~ .,  method = "rpart",  data = train_set,   tuneLength = 10,   metric = "Accuracy" )
+mod_rpart <- train(classe ~ .,  method = "rpart",  data = train_set,   tuneLength = 50,   metric = "Accuracy" )
 
 fancyRpartPlot(mod_rpart$finalModel)
 
